@@ -4,8 +4,12 @@ on:
   push:
     tags:
       - 'v*'
-      - '*'
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing GitHub release tag to attach the jar to (for example v1.0.0)'
+        required: true
+        default: 'v1.0.0'
 
 jobs:
   build:
@@ -33,7 +37,14 @@ jobs:
           name: batu.jar
           path: build/libs/batu.jar
 
-      - name: Create GitHub release and attach jar
+      - name: Attach jar to existing GitHub release
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event.inputs.release_tag }}
+        run: gh release upload "$RELEASE_TAG" build/libs/batu.jar --clobber
+
+      - name: Create GitHub release and attach jar for tag builds
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:

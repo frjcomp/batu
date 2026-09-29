@@ -1,14 +1,16 @@
 # batu
 
-Burp extension that captures an OIDC `access_token` and replaces a placeholder token in tool-generated requests.
+Burp extension for testing OIDC-protected apps where the application itself is expected to refresh tokens (for example via Keycloak). The extension captures a fresh `access_token` and substitutes a placeholder in Burp-generated requests.
 
-## What it does
+## How it works
 
-- listens for token responses from `/protocol/openid-connect/token`
+- watches OIDC token responses from `/protocol/openid-connect/token`
 - stores the latest JWT in memory
-- replaces `<@batu_token@>` with the captured token in outgoing requests
-- updates the request body and `Content-Length` so the request remains valid
-- shows the current JWT and recent log output in a Burp tab
+- replaces `<@batu_token@>` in HTTP headers and bodies for Repeater / Intruder / Scanner traffic
+
+## Required app behavior
+
+The application must refresh its own tokens. This extension only replaces the placeholder in Burp-generated requests.
 
 ## Build
 
@@ -22,15 +24,30 @@ Artifact:
 build/libs/batu.jar
 ```
 
+## Download
+
+1. Open the GitHub Releases page for this repository.
+2. Download the latest `batu.jar` asset.
+3. Save it locally.
+
 ## Load in Burp
 
 1. Open Burp -> Extensions -> Installed
 2. Click Add
-3. Select `build/libs/batu.jar`
-4. Load the extension and test it from Repeater / Intruder / Scanner traffic
+3. Select the downloaded `batu.jar`
+4. Enable the extension and test from Repeater / Intruder / Scanner
+
+## Example request
+
+```http
+GET /api/me HTTP/1.1
+Host: example.com
+Authorization: Bearer <@batu_token@>
+Accept: application/json
+```
+
+When the extension captures a valid JWT, it replaces the placeholder with the latest token before the request is sent from Repeater, Intruder, or Scanner. Proxy traffic is not modified.
 
 ## Notes
 
-- the extension is intentionally limited to tool-originated traffic
-- Proxy traffic is left alone
-- the placeholder string is: `<@batu_token@>`
+- only Repeater, Intruder, and Scanner traffic is processed
