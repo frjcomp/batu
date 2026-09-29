@@ -1,0 +1,41 @@
+name: Build batu jar
+
+on:
+  push:
+    tags:
+      - 'v*'
+      - '*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Build jar
+        run: ./gradlew clean jar --no-daemon --console=plain
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: batu.jar
+          path: build/libs/batu.jar
+
+      - name: Create GitHub release and attach jar
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/libs/batu.jar
+          generate_release_notes: true
